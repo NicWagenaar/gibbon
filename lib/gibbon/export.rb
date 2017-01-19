@@ -41,7 +41,7 @@ module Gibbon
       block = Proc.new { |row| rows << row } unless block_given?
 
       url = URI.parse(api_url)
-      req = Net::HTTP::Post.new(url.path, initheader = {'Content-Type' => 'application/json'})
+      req = Net::HTTP::Post.new(url.path, {'Content-Type' => 'application/json'})
       req.body = MultiJson.dump(params)
       Net::HTTP.start(url.host, url.port, read_timeout: @timeout, use_ssl: true) do |http|
         # http://stackoverflow.com/questions/29598196/ruby-net-http-read-body-nethttpokread-body-called-twice-ioerror
@@ -71,7 +71,7 @@ module Gibbon
 
 
     def parse_line(line)
-      parsed_response = MultiJson.load(line)
+      MultiJson.load(line)
     rescue MultiJson::ParseError
       return []
     end
