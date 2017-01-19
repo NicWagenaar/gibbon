@@ -4,9 +4,10 @@ module Gibbon
   class Export
     include Helpers
 
-    attr_accessor :api_key, :timeout
+    attr_accessor :api_endpoint, :api_key, :timeout
 
-    def initialize(api_key: nil, timeout: nil)
+    def initialize(api_endpoint: nil, api_key: nil, timeout: nil)
+      @api_endpoint = api_endpoint ||  self.class.api_endpoint
       @api_key = api_key || self.class.api_key
       @timeout = timeout || self.class.timeout || 600
     end
@@ -26,17 +27,18 @@ module Gibbon
     protected
 
     def export_api_url
-      "https://#{get_data_center_from_api_key(@api_key)}api.mailchimp.com/export/1.0/"
+      computed_api_endpoint = "https://#{get_data_center_from_api_key(@api_key)}api.mailchimp.com"
+      "#{@api_endpoint || computed_api_endpoint}/export/1.0/"
     end
 
     def call(method, params = {}, &block)
+      ensure_api_key
+
       rows = []
 
       api_url = export_api_url + method + "/"
       params = params.merge({ apikey: @api_key })
       block = Proc.new { |row| rows << row } unless block_given?
-
-      ensure_api_key(params)
 
       url = URI.parse(api_url)
       req = Net::HTTP::Post.new(url.path, initheader = {'Content-Type' => 'application/json'})
@@ -66,8 +68,8 @@ module Gibbon
     rescue MultiJson::ParseError
       [[], last]
     end
-     
-     
+
+
     def parse_line(line)
       parsed_response = MultiJson.load(line)
     rescue MultiJson::ParseError
@@ -76,17 +78,17 @@ module Gibbon
 
     private
 
-    def ensure_api_key(params)
-      unless params[:apikey] && (get_data_center_from_api_key(params[:apikey]) != "")
+    def ensure_api_key
+      unless @api_key && @api_endpoint
         raise Gibbon::GibbonError, "You must set an api_key prior to making a call"
       end
     end
 
     class << self
-      attr_accessor :api_key, :timeout
+      attr_accessor :api_endpoint, :api_key, :timeout
 
       def method_missing(sym, *args, &block)
-        new(api_key: self.api_key, timeout: self.timeout).send(sym, *args, &block)
+        new(api_endpoint: self.api_endpoint, api_key: self.api_key, timeout: self.timeout).send(sym, *args, &block)
       end
     end
   end
