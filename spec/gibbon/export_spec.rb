@@ -11,7 +11,7 @@ describe Gibbon::Export do
     expect {@export.list(id: "123456")}.to raise_error(Gibbon::GibbonError)
   end
 
-  it "doesn't allow api key without data center" do
+  it "doesn't allow empty api endpoint" do
     @api_key = "123"
     @export.api_key = @api_key
     expect {@export.list(id: "123456")}.to raise_error(Gibbon::GibbonError)
